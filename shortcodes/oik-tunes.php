@@ -24,7 +24,7 @@ function oik_tracks( $atts=null, $content=null, $tag=null ) {
                        , "compare" => "IN"  
                        );
     $atts['meta_query'] = $meta_query;
-    oik_require( "includes/bw_posts.inc" );
+    oik_require( "includes/bw_posts.php" );
     $posts = bw_get_posts( $atts ); 
     
     sol( bw_array_get( $atts, 'class', 'oik-tracks' ));
