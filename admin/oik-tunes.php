@@ -36,6 +36,7 @@ function oik_tunes_import_recording( $folder ) {
   $folder = stripslashes( $folder );
   p( "Analyzing $folder "); 
   if ( !class_exists( "getID3" ) ) {
+  	p( "Loading getID3 from oik-tunes" );
     oik_require( "getid3/getid3.php", "oik-tunes" );
   }  
   // Initialize getID3 engine
@@ -193,7 +194,7 @@ function oik_tunes_analyze_file( $filename, $getID3 ) {
   $result['_oikt_composer'] = oik_tunes_get_composers( $fileInfo );
   $result['_oikt_duration'] = oik_tunes_get_duration( $fileInfo ); 
   $result['_oikt_title'] = oik_tunes_get_title( $fileInfo ); 
-  $result['_oikt_track'] = oik_tunes_get_field( $fileInfo, "track" );
+  $result['_oikt_track'] = oik_tunes_get_field( $fileInfo, "track_number" );
   $result['_oikt_year'] = oik_tunes_get_field( $fileInfo, "year" ); 
   $result['_oikt_publisher'] = oik_tunes_get_field( $fileInfo, "publisher" ); 
   $result['_oikt_MPCI'] = oik_tunes_get_field( $fileInfo, "mediaprimaryclassid" ); 
@@ -376,7 +377,7 @@ function oik_tunes_get_UFI( $result, $fileinfo ) {
  * Another way would be to have it included in the $result array! 
  */
 function oik_tunes_query_recording( $result ) { 
-  oik_require( "includes/bw_posts.inc" ); 
+  oik_require( "includes/bw_posts.php" );
   $atts = array();
   $atts['post_type'] = "oik-recording" ;
   $atts['numberposts'] = 1; 
@@ -410,6 +411,7 @@ function oik_tunes_create_post_date( $result ) {
   $minsec = $result['_oikt_duration'];
   $post_date = bw_format_date( "$year-$mon-$day 00:$minsec", "Y-m-d H:i:s" ); 
   p( $post_date );
+  bw_trace2( $post_date, "post_date" );
   return( $post_date );
 }
 
@@ -490,7 +492,7 @@ function oik_tunes_query_track( $result ) {
   $oikt_UFI = bw_array_get( $result, "_oikt_UFI", null );
   bw_trace2();
   if ( $oikt_UFI ) {
-    oik_require( "includes/bw_posts.inc" );
+    oik_require( "includes/bw_posts.php" );
     $args = array( "post_type" => "oik-track"
                  , "meta_key" => "_oikt_UFI"
                  , "meta_value" => $oikt_UFI
