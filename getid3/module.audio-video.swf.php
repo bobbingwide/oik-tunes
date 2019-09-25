@@ -1,10 +1,11 @@
 <?php
+
 /////////////////////////////////////////////////////////////////
 /// getID3() by James Heinrich <info@getid3.org>               //
-//  available at http://getid3.sourceforge.net                 //
-//            or http://www.getid3.org                         //
-/////////////////////////////////////////////////////////////////
-// See readme.txt for more details                             //
+//  available at https://github.com/JamesHeinrich/getID3       //
+//            or https://www.getid3.org                        //
+//            or http://getid3.sourceforge.net                 //
+//  see readme.txt for more details                            //
 /////////////////////////////////////////////////////////////////
 //                                                             //
 // module.audio-video.swf.php                                  //
@@ -18,6 +19,9 @@ class getid3_swf extends getid3_handler
 {
 	public $ReturnAllTagData = false;
 
+	/**
+	 * @return bool
+	 */
 	public function Analyze() {
 		$info = &$this->getid3->info;
 
@@ -26,9 +30,9 @@ class getid3_swf extends getid3_handler
 
 		// http://www.openswf.org/spec/SWFfileformat.html
 
-		fseek($this->getid3->fp, $info['avdataoffset'], SEEK_SET);
+		$this->fseek($info['avdataoffset']);
 
-		$SWFfileData = fread($this->getid3->fp, $info['avdataend'] - $info['avdataoffset']); // 8 + 2 + 2 + max(9) bytes NOT including Frame_Size RECT data
+		$SWFfileData = $this->fread($info['avdataend'] - $info['avdataoffset']); // 8 + 2 + 2 + max(9) bytes NOT including Frame_Size RECT data
 
 		$info['swf']['header']['signature']  = substr($SWFfileData, 0, 3);
 		switch ($info['swf']['header']['signature']) {
@@ -41,7 +45,7 @@ class getid3_swf extends getid3_handler
 				break;
 
 			default:
-				$info['error'][] = 'Expecting "FWS" or "CWS" at offset '.$info['avdataoffset'].', found "'.getid3_lib::PrintHexBytes($info['swf']['header']['signature']).'"';
+				$this->error('Expecting "FWS" or "CWS" at offset '.$info['avdataoffset'].', found "'.getid3_lib::PrintHexBytes($info['swf']['header']['signature']).'"');
 				unset($info['swf']);
 				unset($info['fileformat']);
 				return false;
@@ -56,7 +60,7 @@ class getid3_swf extends getid3_handler
 			if ($decompressed = @gzuncompress($SWFfileData)) {
 				$SWFfileData = $SWFHead.$decompressed;
 			} else {
-				$info['error'][] = 'Error decompressing compressed SWF data ('.strlen($SWFfileData).' bytes compressed, should be '.($info['swf']['header']['length'] - 8).' bytes uncompressed)';
+				$this->error('Error decompressing compressed SWF data ('.strlen($SWFfileData).' bytes compressed, should be '.($info['swf']['header']['length'] - 8).' bytes uncompressed)');
 				return false;
 			}
 		}
