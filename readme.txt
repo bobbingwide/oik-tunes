@@ -4,7 +4,7 @@ Donate link: http://www.oik-plugins.com/oik/oik-donate/
 Tags: getID3, recordings, tracks, import
 Requires at least: 3.5.1
 Tested up to: 3.5.1
-Stable tag: 0.1.0314
+Stable tag: 0.1.0316
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -67,6 +67,9 @@ It's only there to help you build the recording catalog.
 1. oik-tunes in action
 
 == Upgrade Notice ==
+= 0.1.0316 =
+Needed to import tracks which are missing the UniqueFileIdentifier.
+
 = 0.1.0314 =
 Dependent upon oik v2.0-alpha and oik fields v1.18
 
@@ -76,7 +79,10 @@ Dependent upon oik v2.0-alpha and oik fields v1.18.0302
 = 0.1.0218 =
 This plugin is dependent upon oik v1.18 and oik fields v1.18
 
-== Changelog == 
+== Changelog ==
+= 0.1.0316 =
+* Changed: Added support for creating a UniqueFileIdentifier from Artist;Year;Track 
+ 
 = 0.1.0314 =
 * Added: Tracks can now be re-imported, updating the fields
 * Added: AJAX interface - used by oik-batch

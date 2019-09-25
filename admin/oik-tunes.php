@@ -54,6 +54,11 @@ function oik_tunes_import() {
   } 
 }
 
+/**
+ * Return the duration of the track
+ * @param array $fileinfo
+ * @return string - duration of the track
+ */
 function oik_tunes_get_duration( $fileInfo ) {
   $duration = bw_array_get( $fileInfo, "playtime_string", null );
   p( "Duration: $duration ");
@@ -192,10 +197,10 @@ function oik_tunes_analyze_file( $filename, $getID3 ) {
   $result['_oikt_year'] = oik_tunes_get_field( $fileInfo, "year" ); 
   $result['_oikt_publisher'] = oik_tunes_get_field( $fileInfo, "publisher" ); 
   $result['_oikt_MPCI'] = oik_tunes_get_field( $fileInfo, "mediaprimaryclassid" ); 
-  $result['_oikt_UFI'] = oik_tunes_get_field( $fileInfo, "uniquefileidentifier" );
+  $result['_oikt_UFI'] = oik_tunes_get_UFI( $result, $fileInfo ) ;
   $result['_oikt_URI'] = oik_tunes_get_URI( $result );
   bw_trace2( $result, "result", false ); 
-  $site =
+  // $site =
   $post_id = oik_tunes_create_track_client( $result );
   return( $post_id );
 }
@@ -305,7 +310,7 @@ function oik_tunes_create_recording_content( $result ) {
   $content .= bw_array_get( $result, '_oikt_year', null );
   $content .= " )"; 
   $content .= "<!--more -->"; 
-  $content .= "[bw_images titles=n]";
+  $content .= "[bw_images titles=n link=0]";
   $content .= oik_tunes_create_content_field( $result, "_oikt_year", "Year" ); 
   $content .= oik_tunes_create_content_field( $result, "_oikt_format", "Format", "CD" ); 
   $content .= oik_tunes_create_content_field( $result, "_oikt_publisher", "Publisher" ); 
@@ -341,6 +346,28 @@ function oik_tunes_get_URI( $result ) {
   }
   $URI = implode( ";", $URIs );
   return( $URI );
+}
+
+/**
+ * Get a unique file identifier from UniqueFileIdentifier or Album, Year, Track
+ * @param array $result - array of fields
+ * @param 
+ */
+
+function oik_tunes_get_UFI( $result, $fileinfo ) {
+  $UFI = oik_tunes_get_field( $fileinfo, "uniquefileidentifier" );
+  $UFIs = explode( ";", $UFI );
+  if ( count( $UFIs ) == 3 ) {
+    // array_pop( $URIs );
+  } else {
+    p( "Missing uniquefileidentifier using Album;Year;Track" );
+    $UFIs = array();
+    $UFIs[] = bw_array_get( $result, "_oikt_album", "?" );
+    $UFIs[] = bw_array_get( $result, "_oikt_artist","?" );
+    $UFIs[] = bw_array_get( $result, "_oikt_track", "?" );
+  }
+  $UFI = implode( ";", $UFIs );
+  return( $UFI );
 } 
 
 /**
@@ -461,6 +488,7 @@ function oik_tunes_insert_track( $result ) {
  */
 function oik_tunes_query_track( $result ) {
   $oikt_UFI = bw_array_get( $result, "_oikt_UFI", null );
+  bw_trace2();
   if ( $oikt_UFI ) {
     oik_require( "includes/bw_posts.inc" );
     $args = array( "post_type" => "oik-track"
