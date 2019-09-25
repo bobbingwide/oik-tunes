@@ -1,14 +1,14 @@
 <?php
 /*
 Plugin Name: oik tunes
-Plugin URI: http://www.oik-plugins.com/oik-plugins/oik-tunes
+Plugin URI: https://www.oik-plugins.com/oik-plugins/oik-tunes
 Description: Record catalogue - recordings and tracks 
 Version: 0.1.0316
 Author: bobbingwide
 Author URI: http://www.bobbingwide.com
 License: GPL2
 
-    Copyright 2013 Bobbing Wide (email : herb@bobbingwide.com )
+    Copyright 2013-2019 Bobbing Wide (email : herb@bobbingwide.com )
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2,
@@ -98,6 +98,7 @@ function oik_tunes_register_recording() {
   $post_type_args = array();
   $post_type_args['label'] = 'Recordings';
   $post_type_args['description'] = 'Audio and video recordings';
+  $post_type_args['show_in_rest'] = true;
   bw_register_post_type( $post_type, $post_type_args );
   bw_register_field( "_oikt_type", "select", "Recording type", array( '#options' => oik_tunes_recording_types() ) ); 
   bw_register_field( "_oikt_year", "numeric", "Recording year" ); 
@@ -115,7 +116,7 @@ function oik_tunes_register_recording() {
 /**
  * Implements "manage_edit-oik-recording_columns" filter for oik-recording
  */
-function oik_tunes_oik_recording_columns( $columns, $arg2 ) {
+function oik_tunes_oik_recording_columns( $columns, $arg2=null ) {
   $columns["_oikt_year"] = __("Year"); 
   $columns["_oikt_URI"] = __("URI"); 
   bw_trace2();
@@ -139,6 +140,7 @@ function oik_tunes_register_track() {
   $post_type_args = array();
   $post_type_args['label'] = 'Tracks';
   $post_type_args['description'] = 'Track';
+  $post_type_args['show_in_rest'] = true;
   bw_register_post_type( $post_type, $post_type_args );
   bw_register_field( "_oikt_recording", "noderef", "Recording", array( '#type' => "oik-recording", '#optional' => true ) ); 
   bw_register_field( "_oikt_track", "numeric", "Track number e.g. 1" );
@@ -158,7 +160,7 @@ function oik_tunes_register_track() {
 /**
  * Implements "manage_edit-oik-track_columns" filter for oik-track
  */
-function oik_tunes_oik_track_columns( $columns, $arg2 ) {
+function oik_tunes_oik_track_columns( $columns, $arg2=null ) {
   $columns["_oikt_recording"] = __("Recording"); 
   $columns["_oikt_track"] = __("Track"); 
   $columns["_oikt_duration"] = __("Duration"); 
