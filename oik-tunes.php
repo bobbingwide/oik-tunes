@@ -5,7 +5,7 @@ Plugin URI: https://www.oik-plugins.com/oik-plugins/oik-tunes
 Description: Record catalogue - recordings and tracks 
 Version: 1.0.0
 Author: bobbingwide
-Author URI: https://www.oik-plugins.com/author/bobbingwide
+Author URI: https://bobbingwide.com/about-bobbing-wide
 License: GPL3
 
     Copyright 2013-2019, 2023 Bobbing Wide (email : herb@bobbingwide.com )

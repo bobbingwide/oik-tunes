@@ -3,8 +3,8 @@ Contributors: bobbingwide
 Donate link: https://www.oik-plugins.com/oik/oik-donate/
 Tags: getID3, recordings, tracks, import
 Requires at least: 5.0
-Tested up to: 5.2
-Stable tag: 1.0.0-alpha-20190925
+Tested up to: 6.4.1
+Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,16 +63,18 @@ Note: You should make it clear to web site visitors that this plugin does not al
 It's only there to help you build the recording catalog.
 
 = What version of getID3 does it use? =
-The latest stable version is 1.9.18 - released 2019/09/16
-See http://getid3.sourceforge.net/
-and [github
+The latest stable version is 1.9.23 - released 2023/10/19
+See [github JamesHeinrich getID3]
 
 == Screenshots ==
 1. oik-tunes in action
 
 == Upgrade Notice ==
+= 1.0.0 =
+Update for support for PHP 8.1 and PHP 8.2
+
 = 1.0.0-alpha-20190925 =
-Upgrade for PHP 7.3 support
+Upgrade for PHP 7.3 support. This version was never released.
 
 = 0.1.0316 =
 Needed to import tracks which are missing the UniqueFileIdentifier.
@@ -87,6 +89,13 @@ Dependent upon oik v2.0-alpha and oik fields v1.18.0302
 This plugin is dependent upon oik v1.18 and oik fields v1.18
 
 == Changelog ==
+= 1.0.0 = 
+* Changed: Add PHPUnit tests for PHP 8.1 and PHP 8.2 #4
+* Tested: With WordPress 6.4.1 and WordPress Multisite
+* Tested: With Gutenberg 17.1.0
+* Tested: With PHP 8.1 and PHP 8.2
+* Tested: With PHPUnit 9.6
+
 = 1.0.0-alpha-20190925 =
 * Fixed: Fix for UncaughtArgumentCountError on manage_edit-CPT_columns filter functions,[github bobbingwide oik-tunes issues 1]
 * Fixed: Cater for oik update for WordPress 5,[github bobbingwide oik-tunes issues 2]
@@ -113,4 +122,3 @@ This plugin is dependent upon oik v1.18 and oik fields v1.18
 If you want to read more about the oik plugins then please visit the
 [oik plugin](https://www.oik-plugins.com/oik)
 **"the oik plugin - for often included key-information"**
-
