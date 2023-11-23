@@ -247,10 +247,10 @@ function oik_tunes_create_track_admin_ajax( $result, $site ) {
 function oik_tunes_create_content_field( $result, $field, $title, $default=null ) {
   $otag = "div";
   $itag = "span";
-  $value = retstag( $otag, "${field}_title" ); 
+  $value = retstag( $otag, "{$field}_title" ); 
   $value .= $title;
   $value .= ": ";
-  $value .= retstag( $itag, "${field}_value" );
+  $value .= retstag( $itag, "{$field}_value" );
   $value .= bw_array_get( $result, $field, $default );
   $value .= retetag( $itag );
   $value .= retetag( $otag );
@@ -387,7 +387,7 @@ function oik_tunes_query_recording( $result ) {
   $post = bw_array_get( $posts, 0, null );
   bw_trace2( $post, "oik-recording?" );
   if ( !$post ) {
-    p( "Creating a new recording for: ${result['_oikt_album']} " );
+    p( "Creating a new recording for: {$result['_oikt_album']} " );
     $post_id = oik_tunes_create_recording( $result ); 
   } else {
     $post_id = $post->ID; 

@@ -3,12 +3,12 @@
 Plugin Name: oik tunes
 Plugin URI: https://www.oik-plugins.com/oik-plugins/oik-tunes
 Description: Record catalogue - recordings and tracks 
-Version: 1.0.0-alpha-20190925
+Version: 1.0.0
 Author: bobbingwide
 Author URI: https://www.oik-plugins.com/author/bobbingwide
 License: GPL3
 
-    Copyright 2013-2019 Bobbing Wide (email : herb@bobbingwide.com )
+    Copyright 2013-2019, 2023 Bobbing Wide (email : herb@bobbingwide.com )
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2,
@@ -109,8 +109,8 @@ function oik_tunes_register_recording() {
   bw_register_field_for_object_type( "_oikt_MPCI", $post_type );
   bw_register_field_for_object_type( "_oikt_URI", $post_type );
 
-  add_filter( "manage_edit-${post_type}_columns", "oik_tunes_oik_recording_columns", 10, 2 );
-  add_action( "manage_${post_type}_posts_custom_column", "bw_custom_column_admin", 10, 2 );
+  add_filter( "manage_edit-{$post_type}_columns", "oik_tunes_oik_recording_columns", 10, 2 );
+  add_action( "manage_{$post_type}_posts_custom_column", "bw_custom_column_admin", 10, 2 );
 }
 
 /**
@@ -153,8 +153,8 @@ function oik_tunes_register_track() {
   bw_register_field_for_object_type( "_oikt_composer", $post_type );
   bw_register_field_for_object_type( "_oikt_UFI", $post_type );
   
-  add_filter( "manage_edit-${post_type}_columns", "oik_tunes_oik_track_columns", 10, 2 );
-  add_action( "manage_${post_type}_posts_custom_column", "bw_custom_column_admin", 10, 2 );
+  add_filter( "manage_edit-{$post_type}_columns", "oik_tunes_oik_track_columns", 10, 2 );
+  add_action( "manage_{$post_type}_posts_custom_column", "bw_custom_column_admin", 10, 2 );
 }
 
 /**
