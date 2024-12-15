@@ -3,12 +3,12 @@
 Plugin Name: oik tunes
 Plugin URI: https://www.oik-plugins.com/oik-plugins/oik-tunes
 Description: Record catalogue - recordings and tracks 
-Version: 1.0.0
+Version: 1.1.0
 Author: bobbingwide
 Author URI: https://bobbingwide.com/about-bobbing-wide
 License: GPL3
 
-    Copyright 2013-2019, 2023 Bobbing Wide (email : herb@bobbingwide.com )
+    Copyright 2013-2019, 2023, 2024 Bobbing Wide (email : herb@bobbingwide.com )
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2,
@@ -64,6 +64,7 @@ function oik_tunes_fields_loaded() {
   oik_tunes_register_track();
   //oik_tunes_register_artist();
   oik_tunes_add_shortcodes();
+  add_filter( 'aql_query_vars', 'oik_tunes_aql_query_vars', 10, 3 );
 }
 
 /**
@@ -99,15 +100,16 @@ function oik_tunes_register_recording() {
   $post_type_args['label'] = 'Recordings';
   $post_type_args['description'] = 'Audio and video recordings';
   $post_type_args['show_in_rest'] = true;
+  $post_type_args['supports'] = [ 'title', 'editor', 'thumbnail', 'excerpt', 'home', 'publicize', 'author', 'revisions', 'custom-fields' ];
   bw_register_post_type( $post_type, $post_type_args );
   bw_register_field( "_oikt_type", "select", "Recording type", array( '#options' => oik_tunes_recording_types() ) ); 
   bw_register_field( "_oikt_year", "numeric", "Recording year" ); 
   bw_register_field( "_oikt_MPCI", "text", "Media Primary Class ID - NOT a unique key" );
   bw_register_field( "_oikt_URI", "text", "Unique Recording Identifier - possibly a unique key" );
-  bw_register_field_for_object_type( "_oikt_type", $post_type );
-  bw_register_field_for_object_type( "_oikt_year", $post_type );
-  bw_register_field_for_object_type( "_oikt_MPCI", $post_type );
-  bw_register_field_for_object_type( "_oikt_URI", $post_type );
+  bw_register_field_for_object_type( "_oikt_type", $post_type, true );
+  bw_register_field_for_object_type( "_oikt_year", $post_type, true );
+  bw_register_field_for_object_type( "_oikt_MPCI", $post_type, true );
+  bw_register_field_for_object_type( "_oikt_URI", $post_type, true );
 
   add_filter( "manage_edit-{$post_type}_columns", "oik_tunes_oik_recording_columns", 10, 2 );
   add_action( "manage_{$post_type}_posts_custom_column", "bw_custom_column_admin", 10, 2 );
@@ -141,17 +143,19 @@ function oik_tunes_register_track() {
   $post_type_args['label'] = 'Tracks';
   $post_type_args['description'] = 'Track';
   $post_type_args['show_in_rest'] = true;
+  $post_type_args['supports'] = [ 'title', 'editor', 'thumbnail', 'excerpt', 'home', 'publicize', 'author', 'revisions', 'custom-fields' ];
+
   bw_register_post_type( $post_type, $post_type_args );
   bw_register_field( "_oikt_recording", "noderef", "Recording", array( '#type' => "oik-recording", '#optional' => true ) ); 
-  bw_register_field( "_oikt_track", "numeric", "Track number e.g. 1" );
+  bw_register_field( "_oikt_track", "numeric", "Track" );
   bw_register_field( "_oikt_duration", "text", "Duration (mm:ss)" );
   bw_register_field( "_oikt_composer", "text", "Composer(s)" );
   bw_register_field( "_oikt_UFI", "text", "Unique File Identifier - possibly a unique key" );
-  bw_register_field_for_object_type( "_oikt_recording", $post_type );
-  bw_register_field_for_object_type( "_oikt_track", $post_type );
-  bw_register_field_for_object_type( "_oikt_duration", $post_type );
-  bw_register_field_for_object_type( "_oikt_composer", $post_type );
-  bw_register_field_for_object_type( "_oikt_UFI", $post_type );
+  bw_register_field_for_object_type( "_oikt_recording", $post_type, true );
+  bw_register_field_for_object_type( "_oikt_track", $post_type, true );
+  bw_register_field_for_object_type( "_oikt_duration", $post_type, true );
+  bw_register_field_for_object_type( "_oikt_composer", $post_type, true );
+  bw_register_field_for_object_type( "_oikt_UFI", $post_type, true );
   
   add_filter( "manage_edit-{$post_type}_columns", "oik_tunes_oik_track_columns", 10, 2 );
   add_action( "manage_{$post_type}_posts_custom_column", "bw_custom_column_admin", 10, 2 );
@@ -202,9 +206,47 @@ function oik_tunes_ajax_oik_tunes_create_tune() {
 
 }
 
+/**
+ * Sets the meta query value for _date using logic in oik-dates.
+ *
+ * The filter function attached to `oik_default_meta_value_date`
+ * is expected to be `oikd8_default_meta_value_date()`.
+ *
+ * [0] => Array
+ *
+ * [meta_query] => Array
+ *
+ * [relation] => (string) "AND"
+ * [0] => Array
+ *
+ * [key] => (string) "_oikt_recording"
+ * [value] => (string) "1624"
+ *
+ * [1] => Array
+ *
+ * [key] => (string) "_oikt_track"
+ * [compare] => (string) ">"
+ *
+ * @param array $query_args Arguments to be passed to WP_Query.
+ * @param array $block_query The query attribute retrieved from the block.
+ * @param boolean $inherited Whether the query is being inherited.
+ *
+ * @return array
+ */
+function oik_tunes_aql_query_vars( $query_args, $block_query, $inherited ) {
+	bw_backtrace();
+	bw_trace2();
+	$id = bw_global_post_id();
+	if ( isset( $query_args['meta_query'])) {
+		foreach ( $query_args['meta_query'] as $index=>$meta_query ) {
+			if ( $index === 'relation' ) {
+				continue;
+			}
+			if ( '_oikt_recording' === $meta_query['key'] && '.' === $meta_query['value'] ) {
+				$query_args['meta_query'][ $index ]['value']= $id;
 
-
-
-
-
-
+			}
+		}
+	}
+	return $query_args;
+}
