@@ -1,5 +1,8 @@
-<?php // (C) Copyright Bobbing Wide 2013
+<?php // (C) Copyright Bobbing Wide 2013, 2024
 
+define( 'TUNES_FOLDER', "D:/vinyl/My Music/Caravan" );
+global $post_parent;
+$post_parent = null;
 
 // @link http://www.id3.org/id3v2.3.0#head-e4b3c63f836c3eb26a39be082065c21fba4e0acc
   
@@ -21,8 +24,12 @@ function oik_tunes_do_page() {
   
   oik_require( "bobbforms.inc" );
   bw_form();
-  $folder = bw_array_get( $_REQUEST, "folder",  "C:/vinyl/My Music/Caravan" );
+  $folder = bw_array_get( $_REQUEST, "folder", TUNES_FOLDER );
   bw_textfield( "folder", 80, "Directory for recording", stripslashes( $folder ) );
+  $options = glob( "$folder/*", GLOB_ONLYDIR );
+  $options = bw_assoc( $options );
+  br();
+  bw_select( "folder", "Directory for recording", stripslashes( $folder), [ '#options' => $options]);
   e( isubmit(  "_create_oik_tune", "Import track(s)" , null, "button-primary" ) );
   etag( "form" );
   oik_tunes_import();
@@ -42,17 +49,29 @@ function oik_tunes_import_recording( $folder ) {
   // Initialize getID3 engine
   $getID3 = new getID3;
   $getID3->setOption( array( 'encoding' => "UTF-8" ));
-  oik_tunes_analyze( $folder, $getID3 );
+  oik_tunes_analyze( $folder, $folder, $getID3 );
 }
 
 /**
+ * Import tunes from a folder.
  *
  */ 
 function oik_tunes_import() {
-  $folder = bw_array_get( $_REQUEST, "folder", null ); 
-  if ( $folder ) {
-    oik_tunes_import_recording( $folder );
-  } 
+    $folder = bw_array_get( $_REQUEST, "folder", null );
+    if ( $folder ) {
+		$subfolders = oik_tunes_has_subdirs( $folder );
+	    if ( 0 === count( $subfolders ) ) {
+			oik_tunes_import_recording( $folder );
+        } else {
+		    p( "Please choose a subfolder" );
+	    }
+    }
+}
+
+function oik_tunes_has_subdirs( $folder ) {
+	$options = glob( "$folder/*", GLOB_ONLYDIR );
+	$options = bw_assoc( $options );
+	return $options;
 }
 
 /**
@@ -86,9 +105,12 @@ function oik_tunes_get_duration( $fileInfo ) {
                [data] = $composer - stored in Unicode so we have to strip the hex 0's
  */
 function oik_tunes_get_composers( $fileInfo ) {
+	bw_trace2();
+	bw_backtrace();
   $composers = array();
   $composers[] = oik_tunes_get_field( $fileInfo, "composer" );
-  if ( is_array( $fileInfo['asf']['header_extension_object']['extension_data_parsed'] ) ) {
+
+  if ( isset( $fileInfo['asf']) && is_array( $fileInfo['asf']['header_extension_object']['extension_data_parsed'] ) ) {
     $extension_data_parsed = $fileInfo['asf']['header_extension_object']['extension_data_parsed'];
     foreach ( $extension_data_parsed as $key => $data ) {
       if ( $data['guid_name'] == "GETID3_ASF_Metadata_Library_Object" ) {
@@ -121,9 +143,16 @@ function oik_tunes_get_artist( $fileInfo ) {
   return( $artist );
 }
 
-function oik_tunes_get_title( $fileInfo ) {
+function oik_tunes_get_title( $filename, $fileInfo ) {
   $title = oik_tunes_get_field( $fileInfo, "title" );
   p( "Title: $title " );
+	if ( str_starts_with( $title, 'Track ') ) {
+		$title = pathinfo( $filename, PATHINFO_FILENAME );
+		//if ( is_numeric)
+		$title = substr( $title, 2 );
+		p( "Adjusted title: $title" );
+		//gob();
+	}
   return( $title );
 }  
 
@@ -153,7 +182,7 @@ function oik_tunes_get_title( $fileInfo ) {
                                                   //   more than one artist may be present, you may want to use implode:
                                                   //   implode(' & ', ['comments_html']['artist'])
 */
-function oik_tunes_get_field( $fileInfo, $field ) {
+function oik_tunes_get_field( $fileInfo, $field, $noisy=false ) {
   $comments_html = bw_array_get( $fileInfo, "comments_html", null );
   if ( $comments_html ) {
     bw_trace2( $comments_html, "comments_html", true );
@@ -164,7 +193,9 @@ function oik_tunes_get_field( $fileInfo, $field ) {
   } else {
     $value = null ;
   }
-  p( "$field: $value " );
+  if ( $noisy ) {
+	  p( "$field: $value " );
+  }
   return( $value );
 }
 
@@ -183,17 +214,18 @@ function oik_tunes_get_field( $fileInfo, $field ) {
   provider, providerrating, providerstyle, publisher, title, track, uniquefileidentifier, year
   
 */  
-function oik_tunes_analyze_file( $filename, $getID3 ) {
+function oik_tunes_analyze_file( $folder, $filename, $getID3 ) {
   $fileInfo = $getID3->analyze( $filename );
   getid3_lib::CopyTagsToComments( $fileInfo);
   bw_trace2( $fileInfo,  "fileInfo" );
   //print_r( $fileInfo );
   $result = array();
-  $result['_oikt_album'] = oik_tunes_get_field( $fileInfo, "album" );
+  $result['_oikt_album'] = oik_tunes_get_album( $folder, $fileInfo );
+
   $result['_oikt_artist'] = oik_tunes_get_artist( $fileInfo );
   $result['_oikt_composer'] = oik_tunes_get_composers( $fileInfo );
   $result['_oikt_duration'] = oik_tunes_get_duration( $fileInfo ); 
-  $result['_oikt_title'] = oik_tunes_get_title( $fileInfo ); 
+  $result['_oikt_title'] = oik_tunes_get_title( $filename, $fileInfo );
   $result['_oikt_track'] = oik_tunes_get_field( $fileInfo, "track_number" );
   $result['_oikt_year'] = oik_tunes_get_field( $fileInfo, "year" ); 
   $result['_oikt_publisher'] = oik_tunes_get_field( $fileInfo, "publisher" ); 
@@ -204,6 +236,33 @@ function oik_tunes_analyze_file( $filename, $getID3 ) {
   // $site =
   $post_id = oik_tunes_create_track_client( $result );
   return( $post_id );
+}
+
+function oik_tunes_get_album( $filename, $fileInfo) {
+	//echo $filename;
+	global $menu_order;
+	$menu_order = 0;
+	$oikt_album = basename( $filename );
+	$pos = strpos( $oikt_album, '. ' );
+	if ( ($pos !== false)  & ( $pos <= 2)  ) {
+		$menu_order = substr( $oikt_album, 0, $pos);
+		$oikt_album = substr( $oikt_album, $pos+1);
+
+	}
+	p( "Album: $oikt_album" );
+	p( "menu_order: $menu_order" );
+
+	/*
+	$oikt_album = oik_tunes_get_field( $fileInfo, "album" );
+	if ( str_contains( $oikt_album, 'Unknown') ) {
+		//$dirs = pathinfo( $filename, PATHINFO_DIRNAME );
+		//print_r( $dirs );
+		$oikt_album = basename( $filename );
+		p( "album: $oikt_album" );
+		gob();
+	}
+	*/
+	return $oikt_album;
 }
 
 /**
@@ -279,19 +338,20 @@ function oik_tunes_album_link( $result, $oikt_album ) {
  * 
  */
 function oik_tunes_create_track_content( $result, $oikt_album ) {
-  $content = bw_array_get( $result, '_oikt_title', null );
-  $content .= " ";
-  $content .= "( ";
-  $content .= bw_array_get( $result, '_oikt_year', null );
-  $content .= " )"; 
+	$content = '';
+  //$content = bw_array_get( $result, '_oikt_title', null );
+  //$content .= " ";
+  //$content .= "( ";
+  //$content .= bw_array_get( $result, '_oikt_year', null );
+  //$content .= " )";
   $content .= "<!--more -->"; 
-  $result['album_link'] = oik_tunes_album_link( $result, $oikt_album );  
-  $content .= oik_tunes_create_content_field( $result, "album_link", "Album" );
-  $content .= oik_tunes_create_content_field( $result, "_oikt_track" , "Track" );
-  $content .= oik_tunes_create_content_field( $result, "_oikt_duration", "Duration" ); 
-  $content .= oik_tunes_create_content_field( $result, "_oikt_composer", "Composer(s)" );
-  $content .= oik_tunes_create_content_field( $result, "_oikt_publisher", "Publisher" ); 
-  $content .= oik_tunes_create_content_field( $result, "_oikt_artist", "Artist" );  
+  //$result['album_link'] = oik_tunes_album_link( $result, $oikt_album );
+  //$content .= oik_tunes_create_content_field( $result, "album_link", "Album" );
+  //$content .= oik_tunes_create_content_field( $result, "_oikt_track" , "Track" );
+  //$content .= oik_tunes_create_content_field( $result, "_oikt_duration", "Duration" );
+  //$content .= oik_tunes_create_content_field( $result, "_oikt_composer", "Composer(s)" );
+  //$content .= oik_tunes_create_content_field( $result, "_oikt_publisher", "Publisher" );
+  //$content .= oik_tunes_create_content_field( $result, "_oikt_artist", "Artist" );
   return( $content ); 
 }
  
@@ -305,18 +365,19 @@ Blind Dog at St. Dunstan's 1976
 [bw_images]
  */
 function oik_tunes_create_recording_content( $result ) {
-  $content = bw_array_get( $result, '_oikt_album', null );
-  $content .= " ";
-  $content .= "( ";
-  $content .= bw_array_get( $result, '_oikt_year', null );
-  $content .= " )"; 
+	$content = '';
+  //$content = bw_array_get( $result, '_oikt_album', null );
+  //$content .= " ";
+  //$content .= "( ";
+  //$content .= bw_array_get( $result, '_oikt_year', null );
+  //$content .= " )";
   $content .= "<!--more -->"; 
-  $content .= "[bw_images titles=n link=0]";
-  $content .= oik_tunes_create_content_field( $result, "_oikt_year", "Year" ); 
-  $content .= oik_tunes_create_content_field( $result, "_oikt_format", "Format", "CD" ); 
-  $content .= oik_tunes_create_content_field( $result, "_oikt_publisher", "Publisher" ); 
-  $content .= oik_tunes_create_content_field( $result, "_oikt_artist", "Artist" ); 
-  $content .= "[oik-tracks]" ; 
+  //$content .= "[bw_images titles=n link=0]";
+  //$content .= oik_tunes_create_content_field( $result, "_oikt_year", "Year" );
+  //$content .= oik_tunes_create_content_field( $result, "_oikt_format", "Format", "CD" );
+  //$content .= oik_tunes_create_content_field( $result, "_oikt_publisher", "Publisher" );
+  //$content .= oik_tunes_create_content_field( $result, "_oikt_artist", "Artist" );
+  //$content .= "[oik-tracks]" ;
   return( $content ); 
 }
 
@@ -357,17 +418,17 @@ function oik_tunes_get_URI( $result ) {
 
 function oik_tunes_get_UFI( $result, $fileinfo ) {
   $UFI = oik_tunes_get_field( $fileinfo, "uniquefileidentifier" );
-  $UFIs = explode( ";", $UFI );
+  $UFIs = $UFI ? explode( ";", $UFI ) : [];
   if ( count( $UFIs ) == 3 ) {
-    // array_pop( $URIs );
+		  // array_pop( $URIs );
   } else {
-    p( "Missing uniquefileidentifier using Album;Year;Track" );
-    $UFIs = array();
-    $UFIs[] = bw_array_get( $result, "_oikt_album", "?" );
-    $UFIs[] = bw_array_get( $result, "_oikt_artist","?" );
-    $UFIs[] = bw_array_get( $result, "_oikt_track", "?" );
+		  p( "Missing uniquefileidentifier using Album;Year;Track" );
+		  $UFIs  =array();
+		  $UFIs[]=bw_array_get( $result, "_oikt_album", "?" );
+		  $UFIs[]=bw_array_get( $result, "_oikt_artist", "?" );
+		  $UFIs[]=bw_array_get( $result, "_oikt_track", "?" );
   }
-  $UFI = implode( ";", $UFIs );
+  $UFI=implode( ";", $UFIs );
   return( $UFI );
 } 
 
@@ -423,7 +484,9 @@ function oik_tunes_create_post_date( $result ) {
  * and only replace the content if it does still match.
  */
 function oik_tunes_update_track( $post, $result ) {
+	bw_trace2();
   $oikt_album = oik_tunes_query_recording( $result );
+  $post->post_content = oik_tunes_create_track_content( $result, $oikt_album );
   // $content = oik_tunes_create_track_content( $result, $oikt_album ); 
   //$post = array( 'post_type' => "oik-track"
   //             , 'post_title' => $result['_oikt_title']
@@ -465,6 +528,7 @@ function oik_tunes_update_track( $post, $result ) {
 
  */
 function oik_tunes_insert_track( $result ) {
+	global $menu_order;
   $oikt_album = oik_tunes_query_recording( $result );
   $content = oik_tunes_create_track_content( $result, $oikt_album ); 
   $post = array( 'post_type' => "oik-track"
@@ -472,7 +536,8 @@ function oik_tunes_insert_track( $result ) {
                , 'post_name' => $result['_oikt_title']
                , 'post_content' => $content
                , 'post_status' => 'publish'
-               , 'post_date' => oik_tunes_create_post_date( $result )  
+               , 'post_date' => oik_tunes_create_post_date( $result )
+	            , 'menu_order' => $menu_order
                );
   /* Set metadata fields */
   $_POST['_oikt_recording'] = $oikt_album;
@@ -517,6 +582,7 @@ function oik_tunes_create_track( $result ) {
   } else {
     $post_id = oik_tunes_insert_track( $result );
   }
+  oik_tunes_set_taxonomies( $post_id, $result );
   return( $post_id );
 }  
 
@@ -524,7 +590,8 @@ function oik_tunes_create_track( $result ) {
  * Create an oik-recording 
  */
 function oik_tunes_create_recording( $result ) {
-  $content = oik_tunes_create_recording_content( $result ); 
+  $content = oik_tunes_create_recording_content( $result );
+  $post_parent = oik_tunes_get_recording_parent();
   $post = array( 'post_type' => "oik-recording"
                , 'post_title' => $result['_oikt_album']
                , 'post_name' => $result['_oikt_album']
@@ -539,22 +606,50 @@ function oik_tunes_create_recording( $result ) {
   $post_id = wp_insert_post( $post, TRUE );
   bw_trace2( $post_id );
   return( $post_id );
-} 
+}
+
+function oik_tunes_get_recording_parent() {
+	global $post_parent;
+	$folder = bw_array_get( $_REQUEST, "folder", null );
+	$folder = str_replace( TUNES_FOLDER, '', $folder );
+	$parent = dirname( $folder );
+	$parent = stripslashes( $parent );
+	$parent = str_replace( '/', '', $parent );
+	p( "Parent $parent.") ;
+	if ( '' === $parent ) {
+		$post_parent = 0;
+	} else {
+		oik_require( "includes/bw_posts.php" );
+		$atts = array();
+		$atts['post_type'] = "oik-recording" ;
+		$atts['numberposts'] = 1;
+		$atts['post_name'] = sanitize_title( $parent );
+		$posts = bw_get_posts( $atts );
+		$post = bw_array_get( $posts, 0, null );
+		if ( $post ) {
+			$post_parent = $post->ID;
+		}
+	}
+	p( "Post parent: $post_parent" );
+
+	return $post_parent;
+}
 
 /**
  * Import the information for a file
  */
-function oik_tunes_analyze( $filename, $getID3 ) {
+function oik_tunes_analyze( $folder, $filename, $getID3 ) {
   $filename = str_replace( "\\", "/", $filename );
   $filename = str_replace( "//", "/", $filename );
   $file_exists = file_exists( $filename );
   if ( $file_exists ) { 
     $file_exists = is_file( $filename ); 
     if ( $file_exists ) {
-      oik_tunes_analyze_file( $filename, $getID3 );
+      oik_tunes_analyze_file( $folder, $filename, $getID3 );
+
     } else {
-      p( "File $filename is a folder" );
-      oik_tunes_analyze_folder( $filename, $getID3 ); 
+      p( "File '$filename' is a folder" );
+      oik_tunes_analyze_folder( $filename, $getID3 );
     }
   } else { 
     p( "File $filename does not exist" );
@@ -591,13 +686,91 @@ function oik_tunes_analyze_folder( $folder, $getID3 ) {
   $newcd = getcwd();
   $handle = opendir( $newcd );
   while ( $file = readdir( $handle ) ) {
-    p( "Processing $file" );
+    p( "Considering: $file" );
     bw_flush();
     $dothis = oik_tunes_consider_file( $file ); 
     if ( $dothis ) {
-      oik_tunes_analyze( $file, $getID3 );
+      oik_tunes_analyze( $folder, $file, $getID3 );
     }
   }
   closedir( $handle );
   chdir( $cwd );
+}
+
+
+/**
+ * @param $post_id
+ * @param $result
+ *
+ * There are various formats for the _oikt_composer string
+ * We normally expect an array of names separated by semicolons,
+ * as that's how we create the field.
+ * But there are some strange ones we should try to cater for. eg
+ *
+ * J.G. Perry;Mike Ratledge;Perry, John G.;Pye Hastings
+ * Coughlan, Hastings, Sinclair and Sinclair
+ * G.Richardson; J.Schelhaas
+ *
+ *
+ * @return void
+ */
+function oik_tunes_set_taxonomies( $post_id, $result) {
+	$terms = $result['_oikt_composer'];
+	p( "Setting taxonomy terms: $terms" );
+	$post_terms = oik_tunes_fetch_known_terms( $terms );
+	wp_set_post_terms( $post_id, $post_terms, 'composer');
+
+}
+
+function oik_tunes_fetch_known_terms( $terms ) {
+	$terms_array = [];
+	if ( empty( $terms ) ) {
+		return $terms_array;
+	}
+	$term_array = explode( ';', $terms );
+	foreach ( $term_array as $term_name ) {
+		$term_names = oik_tunes_map_term_name( $term_name );
+		foreach ( $term_names as $term_name ) {
+			$term=get_term_by( 'name', $term_name, 'composer' );
+			bw_trace2( $term );
+			if ( $term ) {
+				$terms_array[]=$term->term_id;
+			} else {
+				p( "<b>Missing taxonomy</b> term for: $term_name." );
+			}
+		}
+	}
+	return $terms_array;
+
+}
+
+function oik_tunes_map_term_name( $term_name ) {
+	$term_names = [];
+	$term_name = str_replace( 'P.', 'Pye', $term_name );
+	$term_name = str_replace( 'Michael John', 'Mike', $term_name);
+	switch ( $term_name ) {
+		case 'G.Richardson':
+		case 'Geoffrey Richardson':
+		case 'Richardson, P.G.':
+			$term_names[] = 'Geoff Richardson';
+			break;
+		case 'David Sinclair':
+			$term_names[] = 'Dave Sinclair';
+			break;
+		case 'R.Coughlin':
+			$term_names = 'Richard Coughlan';
+			break;
+		case 'Couglan,Hastings, Sinclair and Sinclair':
+			$term_names[] = 'Richard Couglan';
+			$term_names[] = 'Pye Hastings';
+			$term_names[] = 'Dave Sinclair';
+			$term_names[] = 'Richard Sinclair';
+			break;
+		case 'J.G.Perry':
+		case 'Perry, John G':
+			$term_names[] = 'John G. Perry';
+		default:
+			$term_names[] = $term_name;
+	}
+	return $term_names;
 }

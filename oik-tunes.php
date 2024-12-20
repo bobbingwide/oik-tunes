@@ -62,6 +62,7 @@ function oik_tunes_activation() {
 function oik_tunes_fields_loaded() {
   oik_tunes_register_recording();
   oik_tunes_register_track();
+  oik_tunes_register_taxonomies();
   //oik_tunes_register_artist();
   oik_tunes_add_shortcodes();
   add_filter( 'aql_query_vars', 'oik_tunes_aql_query_vars', 10, 3 );
@@ -123,7 +124,29 @@ function oik_tunes_oik_recording_columns( $columns, $arg2=null ) {
   $columns["_oikt_URI"] = __("URI"); 
   bw_trace2();
   return( $columns ); 
-} 
+}
+
+function oik_tunes_register_taxonomies() {
+	$taxonomies = [ [ 'composer', 'oik-track', 'Composer(s)'] // Pye Hastings, Richard Sinclair
+		, [ 'format', 'oik-recording', 'Format'] // Vinyl, CD, DVD, Video, Blu-ray
+		, [ 'recording-type', 'oik-recording', 'Recording type'] // Studio, Live, Compilation
+		];
+	foreach ( $taxonomies as $taxonomy_info ) {
+
+
+		$taxonomy = $taxonomy_info[0];
+		$post_type= $taxonomy_info[1];
+		$args = $taxonomy_info[2];
+		//$taxonomy ='composer';
+		//$post_type='oik-track';
+		bw_register_custom_category( $taxonomy, $post_type, $args );
+		register_taxonomy_for_object_type( $taxonomy, $post_type );
+		bw_register_field_for_object_type( $taxonomy, $post_type, true );
+		//bw_register_custom_category( $taxonomy, $post_type, 'Composer(s)' );
+		//register_taxonomy_for_object_type( $taxonomy, $post_type );
+		//bw_register_field_for_object_type( $taxonomy, $post_type, true );
+	}
+}
 
 /**
  * Register the oik-track Custom Post Type
@@ -149,13 +172,13 @@ function oik_tunes_register_track() {
   bw_register_field( "_oikt_recording", "noderef", "Recording", array( '#type' => "oik-recording", '#optional' => true ) ); 
   bw_register_field( "_oikt_track", "numeric", "Track" );
   bw_register_field( "_oikt_duration", "text", "Duration (mm:ss)" );
-  bw_register_field( "_oikt_composer", "text", "Composer(s)" );
+  bw_register_field( "_oikt_composer", "text", "Composer" );
   bw_register_field( "_oikt_UFI", "text", "Unique File Identifier - possibly a unique key" );
   bw_register_field_for_object_type( "_oikt_recording", $post_type, true );
   bw_register_field_for_object_type( "_oikt_track", $post_type, true );
   bw_register_field_for_object_type( "_oikt_duration", $post_type, true );
   bw_register_field_for_object_type( "_oikt_composer", $post_type, true );
-  bw_register_field_for_object_type( "_oikt_UFI", $post_type, true );
+  bw_register_field_for_object_type( "_oikt_UFI", $post_type, false );
   
   add_filter( "manage_edit-{$post_type}_columns", "oik_tunes_oik_track_columns", 10, 2 );
   add_action( "manage_{$post_type}_posts_custom_column", "bw_custom_column_admin", 10, 2 );
