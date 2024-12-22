@@ -246,7 +246,8 @@ function oik_tunes_get_album( $filename, $fileInfo) {
 	$pos = strpos( $oikt_album, '. ' );
 	if ( ($pos !== false)  & ( $pos <= 2)  ) {
 		$menu_order = substr( $oikt_album, 0, $pos);
-		$oikt_album = substr( $oikt_album, $pos+1);
+		$oikt_album = substr( $oikt_album, $pos+2);
+		//$oikt_album = trim( $oikt_album );
 
 	}
 	p( "Album: $oikt_album" );
@@ -344,7 +345,9 @@ function oik_tunes_create_track_content( $result, $oikt_album ) {
   //$content .= "( ";
   //$content .= bw_array_get( $result, '_oikt_year', null );
   //$content .= " )";
-  $content .= "<!--more -->"; 
+	$content .= '<!-- wp:more -->';
+	$content .= "<!--more -->";
+    $content .= '<!-- /wp:more -->';
   //$result['album_link'] = oik_tunes_album_link( $result, $oikt_album );
   //$content .= oik_tunes_create_content_field( $result, "album_link", "Album" );
   //$content .= oik_tunes_create_content_field( $result, "_oikt_track" , "Track" );
@@ -371,7 +374,9 @@ function oik_tunes_create_recording_content( $result ) {
   //$content .= "( ";
   //$content .= bw_array_get( $result, '_oikt_year', null );
   //$content .= " )";
-  $content .= "<!--more -->"; 
+	$content .= '<!-- wp:more -->';
+	$content .= "<!--more -->";
+	$content .= '<!-- /wp:more -->';
   //$content .= "[bw_images titles=n link=0]";
   //$content .= oik_tunes_create_content_field( $result, "_oikt_year", "Year" );
   //$content .= oik_tunes_create_content_field( $result, "_oikt_format", "Format", "CD" );
@@ -392,8 +397,15 @@ function oik_tunes_create_recording_content( $result ) {
  * 
  * @link http://lists.musicbrainz.org/pipermail/musicbrainz-users/2006-September/013980.html
  *
+ * The above logic causes problems when the Artist varies between tracks.
+ * The URI needs to be the same for all tracks ina recording.
+ * So we may as well just use the value for _oikt_album,
+ * which is derived from the folder name.
  */
 function oik_tunes_get_URI( $result ) {
+	$URI = $result['_oikt_album'];
+	return $URI;
+	/*
   $URI = bw_array_get( $result, "_oikt_UFI", null ); 
   //p( "$URI before" );
   $URIs = explode( ";", $URI );
@@ -408,6 +420,7 @@ function oik_tunes_get_URI( $result ) {
   }
   $URI = implode( ";", $URIs );
   return( $URI );
+	*/
 }
 
 /**
@@ -447,6 +460,7 @@ function oik_tunes_query_recording( $result ) {
   $posts = bw_get_posts( $atts ); 
   $post = bw_array_get( $posts, 0, null );
   bw_trace2( $post, "oik-recording?" );
+
   if ( !$post ) {
     p( "Creating a new recording for: {$result['_oikt_album']} " );
     $post_id = oik_tunes_create_recording( $result ); 
@@ -597,7 +611,8 @@ function oik_tunes_create_recording( $result ) {
                , 'post_name' => $result['_oikt_album']
                , 'post_content' => $content
                , 'post_status' => 'publish' 
-               , 'post_date' => oik_tunes_create_post_date( $result )  
+               , 'post_date' => oik_tunes_create_post_date( $result )
+	            , 'post_parent' => $post_parent
                );
   $_POST['_oikt_type'] = bw_array_get( $result, "_oikt_format", "CD" );
   $_POST['_oikt_year'] = bw_array_get( $result, "_oikt_year", null );
@@ -608,12 +623,28 @@ function oik_tunes_create_recording( $result ) {
   return( $post_id );
 }
 
+/**
+ * We need to cater for single quotes in the directory name since dirname() see's the escaped value.
+ *
+ * C:\apache\htdocs\wordpress\wp-content\plugins\oik-tunes\admin\oik-tunes.php(618:0) oik_tunes_get_recording_parent(1)
+ * 455 2 2024-12-20T17:54:18+00:00 4.855095 0.000495 cf=oik-options_page_oik_tunes 17212 46 0 52428800/52428800 256M F=605 en_GB
+ * folder D:/vinyl/My Music/Caravan/Who Do You Think We Are/2. If I Could Do It All Over Again, I\'d Do It All Over You [Who Do You Think We Are- Box Set]
+ * @#:0 68 439<p>Album:  If I Could Do It All Over Again, I'd Do It All Over You [Who Do You Think We Are- Box Set]</p><p>menu_order: 2</p><p>Artist: Caravan </p><p></p><p>Duration: 3:07 </p><p>Title: If I Could Do It All Over Again, I&#039;d Do It All Over You
+ * </p><p>Missing uniquefileidentifier using Album;Year;Track</p><p>Creating a new recording for:  If I Could Do It All Over Again, I'd Do It All Over You [Who Do You Think We Are- Box Set] </p>
+ *
+ * @return int|mixed|null
+ */
+
 function oik_tunes_get_recording_parent() {
 	global $post_parent;
+	bw_trace2( $_REQUEST, '_REQUEST', false );
 	$folder = bw_array_get( $_REQUEST, "folder", null );
+	$folder = stripslashes( $folder );
+	bw_trace2( $folder, "folder", false);
 	$folder = str_replace( TUNES_FOLDER, '', $folder );
 	$parent = dirname( $folder );
-	$parent = stripslashes( $parent );
+	bw_trace2( $parent, "parent", false );
+	//$parent = stripslashes( $parent );
 	$parent = str_replace( '/', '', $parent );
 	p( "Parent $parent.") ;
 	if ( '' === $parent ) {
@@ -631,6 +662,9 @@ function oik_tunes_get_recording_parent() {
 		}
 	}
 	p( "Post parent: $post_parent" );
+	if ( null === $post_parent ) {
+		gob();
+	}
 
 	return $post_parent;
 }
@@ -749,13 +783,22 @@ function oik_tunes_map_term_name( $term_name ) {
 	$term_name = str_replace( 'P.', 'Pye', $term_name );
 	$term_name = str_replace( 'Michael John', 'Mike', $term_name);
 	switch ( $term_name ) {
+		case 'Hastings':
+			$term_names[] = 'Pye Hastings';
+			break;
 		case 'G.Richardson':
 		case 'Geoffrey Richardson':
 		case 'Richardson, P.G.':
 			$term_names[] = 'Geoff Richardson';
 			break;
+
+		case 'Sinclair':
 		case 'David Sinclair':
 			$term_names[] = 'Dave Sinclair';
+			break;
+		case 'R. Sinclair':
+		case 'Richard Stephen Sinclair':
+			$term_names[] = 'Richard Sinclair';
 			break;
 		case 'R.Coughlin':
 			$term_names = 'Richard Coughlan';
@@ -769,6 +812,26 @@ function oik_tunes_map_term_name( $term_name ) {
 		case 'J.G.Perry':
 		case 'Perry, John G':
 			$term_names[] = 'John G. Perry';
+			break;
+		case 'D. Austin':
+			$term_names[] = 'Derek Austin';
+			break;
+		case 'S. Evans':
+			$term_names[] = 'Stuart Evans';
+			break;
+		case 'S. Jeffes':
+			$term_names[] = 'Simon Jeffes';
+			break;
+		case 'J. Murphy':
+		case 'Murphy':
+			$term_names[] = 'John Murphy';
+			break;
+		case 'M. Ratledge':
+			$terms_names[] = 'Mike Ratledge';
+			break;
+		case 'J.Schelhaas':
+			$term_names[] = 'Jan Schelhaas';
+			break;
 		default:
 			$term_names[] = $term_name;
 	}
