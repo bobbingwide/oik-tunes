@@ -1,6 +1,7 @@
 <?php // (C) Copyright Bobbing Wide 2013, 2024
-
-define( 'TUNES_FOLDER', "D:/vinyl/My Music/Caravan" );
+if ( !defined( 'TUNES_FOLDER') ) {
+	define( 'TUNES_FOLDER', "D:/vinyl/My Music/Caravan" );
+}
 global $post_parent;
 $post_parent = null;
 
@@ -25,7 +26,7 @@ function oik_tunes_do_page() {
   oik_require( "bobbforms.inc" );
   bw_form();
   $folder = bw_array_get( $_REQUEST, "folder", TUNES_FOLDER );
-  bw_textfield( "folder", 80, "Directory for recording", stripslashes( $folder ) );
+  bw_textfield( "folder", 80, "Directory for recording", trim( stripslashes( $folder ) ) );
   $options = glob( "$folder/*", GLOB_ONLYDIR );
   $options = bw_assoc( $options );
   br();
@@ -230,7 +231,7 @@ function oik_tunes_analyze_file( $folder, $filename, $getID3 ) {
   $result['_oikt_year'] = oik_tunes_get_field( $fileInfo, "year" ); 
   $result['_oikt_publisher'] = oik_tunes_get_field( $fileInfo, "publisher" ); 
   $result['_oikt_MPCI'] = oik_tunes_get_field( $fileInfo, "mediaprimaryclassid" ); 
-  $result['_oikt_UFI'] = oik_tunes_get_UFI( $result, $fileInfo ) ;
+  $result['_oikt_UFI'] = basename( $filename ); //oik_tunes_get_UFI( $result, $fileInfo ) ;
   $result['_oikt_URI'] = oik_tunes_get_URI( $result );
   bw_trace2( $result, "result", false ); 
   // $site =
@@ -246,6 +247,7 @@ function oik_tunes_get_album( $filename, $fileInfo) {
 	$pos = strpos( $oikt_album, '. ' );
 	if ( ($pos !== false)  & ( $pos <= 2)  ) {
 		$menu_order = substr( $oikt_album, 0, $pos);
+		$menu_order = (int) $menu_order;
 		$oikt_album = substr( $oikt_album, $pos+2);
 		//$oikt_album = trim( $oikt_album );
 
@@ -497,9 +499,9 @@ function oik_tunes_create_post_date( $result ) {
  * That's a reason to have used a shortcode ... but we could check the content against the fields and see if it still matches
  * and only replace the content if it does still match.
  */
-function oik_tunes_update_track( $post, $result ) {
+function oik_tunes_update_track( $post, $result, $oikt_album ) {
 	bw_trace2();
-  $oikt_album = oik_tunes_query_recording( $result );
+  //$oikt_album = oik_tunes_query_recording( $result );
   $post->post_content = oik_tunes_create_track_content( $result, $oikt_album );
   // $content = oik_tunes_create_track_content( $result, $oikt_album ); 
   //$post = array( 'post_type' => "oik-track"
@@ -541,9 +543,9 @@ function oik_tunes_update_track( $post, $result ) {
 </pre>
 
  */
-function oik_tunes_insert_track( $result ) {
+function oik_tunes_insert_track( $result, $oikt_album ) {
 	global $menu_order;
-  $oikt_album = oik_tunes_query_recording( $result );
+  //$oikt_album = oik_tunes_query_recording( $result );
   $content = oik_tunes_create_track_content( $result, $oikt_album ); 
   $post = array( 'post_type' => "oik-track"
                , 'post_title' => $result['_oikt_title']
@@ -565,18 +567,27 @@ function oik_tunes_insert_track( $result ) {
 }
 
 /**
- * Find the track given the fields 
+ * Find the track given the fields
+ *
+ * Now that oikt_UFI is not unique we need to match it to the recording ( $oikt_album ).
+ * This has to be checked against _oikt_recording in a meta_query.
  */
-function oik_tunes_query_track( $result ) {
+function oik_tunes_query_track( $result, $oikt_album ) {
   $oikt_UFI = bw_array_get( $result, "_oikt_UFI", null );
   bw_trace2();
   if ( $oikt_UFI ) {
     oik_require( "includes/bw_posts.php" );
     $args = array( "post_type" => "oik-track"
-                 , "meta_key" => "_oikt_UFI"
-                 , "meta_value" => $oikt_UFI
-                 , "numberposts" => 1
-                 );
+	    , 'meta_query' => [	'relation' => 'AND',
+		    [ "key" => "_oikt_recording"
+			    , "value" => $oikt_album
+		    ],
+		    [ "key" => "_oikt_UFI"
+                 , "value" => $oikt_UFI
+			]
+		    ]
+            , "numberposts" => 1
+             );
     $posts = bw_get_posts( $args);
     $post = bw_array_get( $posts, 0, null ); 
   } else {
@@ -590,11 +601,12 @@ function oik_tunes_query_track( $result ) {
  * Create or update the track
  */
 function oik_tunes_create_track( $result ) {
-  $post = oik_tunes_query_track( $result );
+	$oikt_album = oik_tunes_query_recording( $result );
+  $post = oik_tunes_query_track( $result, $oikt_album );
   if ( $post ) {
-    $post_id = oik_tunes_update_track( $post, $result );
+    $post_id = oik_tunes_update_track( $post, $result, $oikt_album );
   } else {
-    $post_id = oik_tunes_insert_track( $result );
+    $post_id = oik_tunes_insert_track( $result, $oikt_album );
   }
   oik_tunes_set_taxonomies( $post_id, $result );
   return( $post_id );
@@ -639,6 +651,7 @@ function oik_tunes_get_recording_parent() {
 	global $post_parent;
 	bw_trace2( $_REQUEST, '_REQUEST', false );
 	$folder = bw_array_get( $_REQUEST, "folder", null );
+	$folder = trim( $folder );
 	$folder = stripslashes( $folder );
 	bw_trace2( $folder, "folder", false);
 	$folder = str_replace( TUNES_FOLDER, '', $folder );
@@ -647,14 +660,18 @@ function oik_tunes_get_recording_parent() {
 	//$parent = stripslashes( $parent );
 	$parent = str_replace( '/', '', $parent );
 	p( "Parent $parent.") ;
-	if ( '' === $parent ) {
+	bw_trace2( $parent, "Parent of: !$folder!" );
+	if ( '' === $parent || '/' === $parent || '\\' === $parent ) {
 		$post_parent = 0;
 	} else {
+
 		oik_require( "includes/bw_posts.php" );
 		$atts = array();
 		$atts['post_type'] = "oik-recording" ;
 		$atts['numberposts'] = 1;
 		$atts['post_name'] = sanitize_title( $parent );
+		$atts['meta_key'] = "_oikt_URI";
+		$atts['meta_value'] = $parent;
 		$posts = bw_get_posts( $atts );
 		$post = bw_array_get( $posts, 0, null );
 		if ( $post ) {
@@ -703,7 +720,9 @@ function oik_tunes_consider_file( $file ) {
     $nos = array( "jpg" => false
                 , "db" => false
                 , "ini" => false
-                , "" => false 
+                , "" => false
+	            , "jpeg" => false
+	            , "webp" => false
                 );
     $dothis = bw_array_get( $nos, $ext, true );
   }  
@@ -800,6 +819,7 @@ function oik_tunes_map_term_name( $term_name ) {
 		case 'Richard Stephen Sinclair':
 			$term_names[] = 'Richard Sinclair';
 			break;
+		case 'Coughlin':
 		case 'R.Coughlin':
 			$term_names = 'Richard Coughlan';
 			break;
@@ -826,11 +846,15 @@ function oik_tunes_map_term_name( $term_name ) {
 		case 'Murphy':
 			$term_names[] = 'John Murphy';
 			break;
+		case 'Ratledge':
 		case 'M. Ratledge':
 			$terms_names[] = 'Mike Ratledge';
 			break;
 		case 'J.Schelhaas':
 			$term_names[] = 'Jan Schelhaas';
+			break;
+		case 'Wyatt':
+			$term_names[] = 'Robert Wyatt';
 			break;
 		default:
 			$term_names[] = $term_name;
