@@ -66,6 +66,7 @@ function oik_tunes_fields_loaded() {
   //oik_tunes_register_artist();
   oik_tunes_add_shortcodes();
   add_filter( 'aql_query_vars', 'oik_tunes_aql_query_vars', 10, 3 );
+  add_filter( 'the_content', 'oik_tunes_the_content' );
 }
 
 /**
@@ -200,6 +201,7 @@ function oik_tunes_oik_track_columns( $columns, $arg2=null ) {
  */
 function oik_tunes_add_shortcodes() {
   bw_add_shortcode( "oik-tracks", "oik_tracks", oik_path( "shortcodes/oik-tunes.php", "oik-tunes" ), false );
+
 }
 
 /**
@@ -272,4 +274,20 @@ function oik_tunes_aql_query_vars( $query_args, $block_query, $inherited ) {
 		}
 	}
 	return $query_args;
+}
+
+function oik_tunes_the_content( $content) {
+	if ( defined( 'TUNES_FOLDER' ) && defined( 'DVINYL_SYMLINK') ) {
+
+		$post = get_post();
+		//print_r( $post );
+		if ( 'oik-track' === $post->post_type ) {
+			//$content.=TUNES_FOLDER;
+			oik_require( 'classes/class-oik-tunes-track.php', 'oik-tunes');
+			$oik_tunes_track = new Oik_Tunes_Track( $post );
+			$content .= $oik_tunes_track->play();
+		}
+	}
+
+	return $content;
 }
