@@ -544,7 +544,7 @@ function oik_tunes_update_track( $post, $result, $oikt_album ) {
 
  */
 function oik_tunes_insert_track( $result, $oikt_album ) {
-	global $menu_order;
+	//global $menu_order;
   //$oikt_album = oik_tunes_query_recording( $result );
   $content = oik_tunes_create_track_content( $result, $oikt_album ); 
   $post = array( 'post_type' => "oik-track"
@@ -553,7 +553,7 @@ function oik_tunes_insert_track( $result, $oikt_album ) {
                , 'post_content' => $content
                , 'post_status' => 'publish'
                , 'post_date' => oik_tunes_create_post_date( $result )
-	            , 'menu_order' => $menu_order
+	            //, 'menu_order' => $menu_order
                );
   /* Set metadata fields */
   $_POST['_oikt_recording'] = $oikt_album;
@@ -616,6 +616,7 @@ function oik_tunes_create_track( $result ) {
  * Create an oik-recording 
  */
 function oik_tunes_create_recording( $result ) {
+	global $menu_order;
   $content = oik_tunes_create_recording_content( $result );
   $post_parent = oik_tunes_get_recording_parent();
   $post = array( 'post_type' => "oik-recording"
@@ -625,6 +626,7 @@ function oik_tunes_create_recording( $result ) {
                , 'post_status' => 'publish' 
                , 'post_date' => oik_tunes_create_post_date( $result )
 	            , 'post_parent' => $post_parent
+			 , 'menu_order' => $menu_order
                );
   $_POST['_oikt_type'] = bw_array_get( $result, "_oikt_format", "CD" );
   $_POST['_oikt_year'] = bw_array_get( $result, "_oikt_year", null );
@@ -659,7 +661,7 @@ function oik_tunes_get_recording_parent() {
 	bw_trace2( $parent, "parent", false );
 	//$parent = stripslashes( $parent );
 	$parent = str_replace( '/', '', $parent );
-	p( "Parent $parent.") ;
+	p( "Parent: $parent.") ;
 	bw_trace2( $parent, "Parent of: !$folder!" );
 	if ( '' === $parent || '/' === $parent || '\\' === $parent ) {
 		$post_parent = 0;
