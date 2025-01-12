@@ -450,15 +450,20 @@ function oik_tunes_get_UFI( $result, $fileinfo ) {
 /**
  * Determine the post_id of the oik-recording based on: 
  * We can't really use album title and artist so why not try the MPCI - mediaprimaryclassid as the key
- * Another way would be to have it included in the $result array! 
+ * Another way would be to have it included in the $result array!
+ *
+ * This needs to be extended to find the recording within the required post parent!
  */
-function oik_tunes_query_recording( $result ) { 
+function oik_tunes_query_recording( $result ) {
+	$post_parent = oik_tunes_get_recording_parent();
   oik_require( "includes/bw_posts.php" );
   $atts = array();
   $atts['post_type'] = "oik-recording" ;
+  $atts['post_parent'] = $post_parent;
   $atts['numberposts'] = 1; 
   $atts['meta_key'] = "_oikt_URI";
   $atts['meta_value'] = bw_array_get( $result, "_oikt_URI", null );
+
   $posts = bw_get_posts( $atts ); 
   $post = bw_array_get( $posts, 0, null );
   bw_trace2( $post, "oik-recording?" );
