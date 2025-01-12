@@ -67,6 +67,7 @@ function oik_tunes_fields_loaded() {
   oik_tunes_add_shortcodes();
   add_filter( 'aql_query_vars', 'oik_tunes_aql_query_vars', 10, 3 );
   add_filter( 'the_content', 'oik_tunes_the_content' );
+  add_filter( 'query_loop_block_query_vars' ,'oik_tunes_query_loop_block_query_vars', 10, 3 );
 }
 
 /**
@@ -105,12 +106,19 @@ function oik_tunes_register_recording() {
   $post_type_args['supports'] = [ 'title', 'editor', 'thumbnail', 'excerpt', 'home', 'publicize', 'author', 'revisions', 'custom-fields' ];
   bw_register_post_type( $post_type, $post_type_args );
   bw_register_field( "_oikt_type", "select", "Recording type", array( '#options' => oik_tunes_recording_types() ) ); 
-  bw_register_field( "_oikt_year", "numeric", "Recording year" ); 
+  bw_register_field( "_oikt_year", "numeric", "Recording year(s)" );
+  // The release year(s) may be a range of years
+  bw_register_field( "_oikt_release", "numeric", "Release year(s)");
   bw_register_field( "_oikt_MPCI", "text", "Media Primary Class ID - NOT a unique key" );
-  bw_register_field( "_oikt_URI", "text", "Unique Recording Identifier - possibly a unique key" );
+  // The album name needs to unique for each item in a Collection.
+	// Albums in a collection are prefixed by their menu order,
+	// which may also be in the title as Disk n
+bw_register_field( "_oikt_URI", "text", "Album Name" );
   bw_register_field_for_object_type( "_oikt_type", $post_type, true );
   bw_register_field_for_object_type( "_oikt_year", $post_type, true );
-  bw_register_field_for_object_type( "_oikt_MPCI", $post_type, true );
+  bw_register_field_for_object_type( "_oikt_release", $post_type, true );
+
+	bw_register_field_for_object_type( "_oikt_MPCI", $post_type, true );
   bw_register_field_for_object_type( "_oikt_URI", $post_type, true );
 
   add_filter( "manage_edit-{$post_type}_columns", "oik_tunes_oik_recording_columns", 10, 2 );
@@ -173,8 +181,11 @@ function oik_tunes_register_track() {
   bw_register_field( "_oikt_recording", "noderef", "Recording", array( '#type' => "oik-recording", '#optional' => true ) ); 
   bw_register_field( "_oikt_track", "numeric", "Track" );
   bw_register_field( "_oikt_duration", "text", "Duration (mm:ss)" );
+  // Composer stores the values extracted from the file. These are then mapped to the Composer taxonomy
   bw_register_field( "_oikt_composer", "text", "Composer" );
-  bw_register_field( "_oikt_UFI", "text", "Unique File Identifier - possibly a unique key" );
+  // Originally Unique File Identifier... this is now used to store the file name
+  // of the file in the media library
+  bw_register_field( "_oikt_UFI", "text", "File name" );
   bw_register_field_for_object_type( "_oikt_recording", $post_type, true );
   bw_register_field_for_object_type( "_oikt_track", $post_type, true );
   bw_register_field_for_object_type( "_oikt_duration", $post_type, true );
@@ -290,4 +301,23 @@ function oik_tunes_the_content( $content) {
 	}
 
 	return $content;
+}
+
+/**
+ * Updates the query loop query when the post template's classname is 'top-level'.
+ *
+ */
+function oik_tunes_query_loop_block_query_vars( $default_query, $block, $page ) {
+	//bw_trace2();
+	//bw_backtrace();
+	$template_className = $block->parsed_block['attrs']['className'] ?? null;
+	if ( $template_className === 'top-level') {
+		$default_query['post_parent__in'] = [ 0 ];
+		$default_query['meta_key'] = '_oikt_year';
+		$default_query['meta_value'] = '';
+		$default_query['meta_compare'] = 'GE';
+		$default_query['orderby'] = 'meta_value';
+		$default_query['order'] = 'DESC';
+	}
+	return $default_query;
 }
