@@ -8,7 +8,7 @@ Author: bobbingwide
 Author URI: https://bobbingwide.com/about-bobbing-wide
 License: GPL3
 
-    Copyright 2013-2019, 2023, 2024 Bobbing Wide (email : herb@bobbingwide.com )
+    Copyright 2013-2019, 2023, 2024, 2025 Bobbing Wide (email : herb@bobbingwide.com )
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2,
@@ -68,6 +68,7 @@ function oik_tunes_fields_loaded() {
   add_filter( 'aql_query_vars', 'oik_tunes_aql_query_vars', 10, 3 );
   add_filter( 'the_content', 'oik_tunes_the_content' );
   add_filter( 'query_loop_block_query_vars' ,'oik_tunes_query_loop_block_query_vars', 10, 3 );
+  add_filter( 'bw_post_array', 'oik_tunes_bw_post_array', 10, 2 );
 }
 
 /**
@@ -109,16 +110,16 @@ function oik_tunes_register_recording() {
   bw_register_field( "_oikt_year", "numeric", "Recording year(s)" );
   // The release year(s) may be a range of years
   bw_register_field( "_oikt_release", "numeric", "Release year(s)");
-  bw_register_field( "_oikt_MPCI", "text", "Media Primary Class ID - NOT a unique key" );
+  //bw_register_field( "_oikt_MPCI", "text", "Media Primary Class ID - NOT a unique key" );
   // The album name needs to unique for each item in a Collection.
 	// Albums in a collection are prefixed by their menu order,
 	// which may also be in the title as Disk n
-bw_register_field( "_oikt_URI", "text", "Album Name" );
+bw_register_field( "_oikt_URI", "text", "Album name" );
   bw_register_field_for_object_type( "_oikt_type", $post_type, true );
   bw_register_field_for_object_type( "_oikt_year", $post_type, true );
   bw_register_field_for_object_type( "_oikt_release", $post_type, true );
 
-	bw_register_field_for_object_type( "_oikt_MPCI", $post_type, true );
+//	bw_register_field_for_object_type( "_oikt_MPCI", $post_type, true );
   bw_register_field_for_object_type( "_oikt_URI", $post_type, true );
 
   add_filter( "manage_edit-{$post_type}_columns", "oik_tunes_oik_recording_columns", 10, 2 );
@@ -186,13 +187,17 @@ function oik_tunes_register_track() {
   // Originally Unique File Identifier... this is now used to store the file name
   // of the file in the media library
   bw_register_field( "_oikt_UFI", "text", "File name" );
+  bw_register_field( '_oikt_original', 'noderef', 'Original version', array( "#type" => array( "oik-track" ), "#multiple" => 5, "#optional" => true ) );
   bw_register_field_for_object_type( "_oikt_recording", $post_type, true );
   bw_register_field_for_object_type( "_oikt_track", $post_type, true );
   bw_register_field_for_object_type( "_oikt_duration", $post_type, true );
   bw_register_field_for_object_type( "_oikt_composer", $post_type, true );
   bw_register_field_for_object_type( "_oikt_UFI", $post_type, false );
-  
-  add_filter( "manage_edit-{$post_type}_columns", "oik_tunes_oik_track_columns", 10, 2 );
+  bw_register_field_for_object_type( "_oikt_original", $post_type, true );
+	oik_tunes_register_virtual_fields();
+
+
+	add_filter( "manage_edit-{$post_type}_columns", "oik_tunes_oik_track_columns", 10, 2 );
   add_action( "manage_{$post_type}_posts_custom_column", "bw_custom_column_admin", 10, 2 );
 }
 
@@ -320,4 +325,78 @@ function oik_tunes_query_loop_block_query_vars( $default_query, $block, $page ) 
 		$default_query['order'] = 'DESC';
 	}
 	return $default_query;
+}
+
+function oik_tunes_bw_post_array( $post_title, $post ) {
+	if ( $post->post_type === 'oik-track') {
+		$post_title  .=' ';
+		$post_title  .=$post->ID;
+		$recording_id=get_post_meta( $post->ID, '_oikt_recording', true );
+		if ( $recording_id ) {
+			$recording=get_post( $recording_id );
+			if ( $recording ) {
+				$post_title.=' ';
+				$post_title.=$recording->post_title;
+				$post_title.=' ';
+				$post_title.=$recording->post_parent;
+
+			}
+		}
+		bw_trace2();
+	}
+	return $post_title;
+}
+
+/**
+ * Themes a Recording noderef as breadcrumb links.
+ *
+ * @param $key
+ * @param $value
+ * @param $field
+ * @return void
+ */
+
+function bw_theme_field_noderef__oikt_recording( $key, $value, $field ) {
+	bw_trace2();
+	if ( $value && $value[0] ) {
+		$recording = get_post( $value[0]);
+		if ( $recording && $recording->post_parent ) {
+			$parent = [ $recording->post_parent ];
+			bw_theme_field_noderef( $key, $parent, $field );
+			sepan( 'breadcrumb-separator', ' > ');
+		}
+		bw_theme_field_noderef( $key, $value, $field );
+	} else {
+		e( "Invalid _oikt_recording?" );
+	}
+}
+
+function bw_theme_field_noderef__oikt_original( $key, $value, $field ) {
+	bw_trace2();
+	$id = bw_current_post_id();
+	$post = get_post();
+	foreach ( $value as $original ) {
+		//sepan( 'debug', ".$original.$id.");
+		if ( $id === (int) $original ) {
+			sepan( 'original', 'This is the original');
+		} else {
+
+			bw_theme_field_noderef( $key, [ $original ], $field );
+		}
+	}
+
+}
+
+function oik_tunes_register_virtual_fields() {
+	$field_args=array(
+		"#callback"=>"oik_tunes_theme_other_versions",
+		"#parms"   =>"_oikt_original",
+		"#plugin"  =>"oik-tunes",
+		"#file"    =>"includes/oik-tunes-theme-virtual-fields.php",
+		"#form"    =>false,
+		"hint"     =>__( "virtual field", "oik-tunes" ),
+		"#theme"   =>false
+	);
+	bw_register_field( "other_versions", "virtual", "Other versions", $field_args );
+	bw_register_field_for_object_type( 'other_versions', 'oik-track', true );
 }
