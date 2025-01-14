@@ -373,6 +373,9 @@ function bw_theme_field_noderef__oikt_recording( $key, $value, $field ) {
 
 function bw_theme_field_noderef__oikt_original( $key, $value, $field ) {
 	bw_trace2();
+	if ( 0 === count( $value)) {
+		sepan( 'not set', 'Not set');
+	}
 	$id = bw_current_post_id();
 	$post = get_post();
 	foreach ( $value as $original ) {
@@ -380,11 +383,9 @@ function bw_theme_field_noderef__oikt_original( $key, $value, $field ) {
 		if ( $id === (int) $original ) {
 			sepan( 'original', 'This is the original');
 		} else {
-
 			bw_theme_field_noderef( $key, [ $original ], $field );
 		}
 	}
-
 }
 
 function oik_tunes_register_virtual_fields() {
