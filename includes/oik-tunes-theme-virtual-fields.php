@@ -11,9 +11,11 @@
  */
 
 function oik_tunes_theme_other_versions( $_oikt_original, $id  ) {
+	if ( empty( $_oikt_original ) )
+		return;
 	//e( "Other versions");
 	//bw_backtrace();
-	//bw_trace2();
+	bw_trace2();
 	//e( "Original track: $_oikt_original");
 	$args = [ "post_type" => "oik-track"
 	, "numberposts" => "-1"
@@ -28,25 +30,29 @@ function oik_tunes_theme_other_versions( $_oikt_original, $id  ) {
 	//bw_trace2( $posts, "posts", false  );
 	sol();
 	foreach ( $posts as $post ) {
-		$linktext = oik_tunes_get_full_linktext( $post);
-		$linkt = retlink( "oik-track", get_permalink( $post->ID), $linktext );
-		li( $linkt );
+		$version = oik_tunes_get_version_info( $post);
+		//$linkt = retlink( "oik-track", get_permalink( $post->ID), $linktext );
+		li( $version );
 	}
 	eol();
 }
 
-function oik_tunes_get_full_linktext( $post ) {
-	$linktext = $post->post_title;
-	$linktext .= ': ';
+function oik_tunes_get_version_info( $post ) {
+	$version = retlink( "oik-track", get_permalink( $post->ID), $post->post_title );
+	$version .= ' ';
+	$version .= get_post_meta( $post->ID, '_oikt_duration', true );
+	$version .= ' ';
+
 	$recording_id = get_post_meta( $post->ID, '_oikt_recording', true );
 	$recording = get_post( $recording_id );
 	if ( $recording ) {
 		if ( $recording->post_parent ) {
 			$parent=get_post( $recording->post_parent );
-			$linktext .= $parent->post_title;
-			$linktext.= ' > ';
+			$version .= retlink( "oik-recording", get_permalink( $parent->ID), $parent->post_title );
+			$version.= ' > ';
 		}
-		$linktext.=$recording->post_title;
+
+		$version .= retlink( "oik-recording", get_permalink( $recording->ID), $recording->post_title );
 	}
-	return $linktext;
+	return $version;
 }
