@@ -10,10 +10,17 @@ $post_parent = null;
 function oik_tunes_lazy_admin_menu() {
 
   add_submenu_page( 'oik_menu', 'oik tunes', 'Import tracks', 'manage_options', 'oik_tunes', 'oik_tunes_do_page' );
+  add_submenu_page( 'oik_menu', 'oik tunes', 'Set track versions', 'manage_options', 'track versions', 'oik_tunes_track_versions');
   //add_posts_page( "", " move", 'manage_options', "oik_tunes", "oik_tunes_do_page");
   
   //add_submenu_page( 'edit.php?post_type=oik-track', "Import tracks", "manage_options", "oik_tunes", "oik_tunes_do_page"  );
   
+}
+
+function oik_tunes_track_versions() {
+	oik_require( 'classes/class-oik-tunes-track-versions.php', 'oik-tunes');
+	$trackVersions = new Oik_Tunes_Track_versions();
+	$trackVersions->process();
 }
 
 /** 
