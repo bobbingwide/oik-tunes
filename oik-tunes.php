@@ -115,12 +115,16 @@ function oik_tunes_register_recording() {
 	// Albums in a collection are prefixed by their menu order,
 	// which may also be in the title as Disk n
 bw_register_field( "_oikt_URI", "text", "Album name" );
+bw_register_field( '_oikt_wikipedia', 'URL', 'Wikipedia');
+	bw_register_field( '_oikt_cocacamp', 'URL', 'CoCaCamp');
   bw_register_field_for_object_type( "_oikt_type", $post_type, true );
   bw_register_field_for_object_type( "_oikt_year", $post_type, true );
   bw_register_field_for_object_type( "_oikt_release", $post_type, true );
 
 //	bw_register_field_for_object_type( "_oikt_MPCI", $post_type, true );
   bw_register_field_for_object_type( "_oikt_URI", $post_type, true );
+  bw_register_field_for_object_type( '_oikt_wikipedia', $post_type, true );
+bw_register_field_for_object_type( '_oikt_cocacamp', $post_type, true );
 
   add_filter( "manage_edit-{$post_type}_columns", "oik_tunes_oik_recording_columns", 10, 2 );
   add_action( "manage_{$post_type}_posts_custom_column", "bw_custom_column_admin", 10, 2 );
@@ -401,3 +405,44 @@ function oik_tunes_register_virtual_fields() {
 	bw_register_field( "other_versions", "virtual", "Other versions", $field_args );
 	bw_register_field_for_object_type( 'other_versions', 'oik-track', true );
 }
+
+/**
+ * Themes a link to Wikipedia.
+ *
+ * eg https://en.wikipedia.org/wiki/Live_at_the_Fairfield_Halls,_1974
+ *
+ * @param $key
+ * @param $value
+ * @param $field
+ *
+ * @return void
+ *
+ */
+function bw_theme_field_url__oikt_wikipedia( $key, $value, $field ) {
+	oik_tunes_theme_url( $key, $value, $field );
+}
+
+/**
+ * Themes a link to cocacamp.
+ *
+ * eg
+ * @param $key
+ * @param $value
+ * @param $field
+ *
+ * @return void
+ */
+function bw_theme_field_url__oikt_cocacamp( $key, $value, $field ) {
+	oik_tunes_theme_url( $key, $value, $field );
+}
+
+function oik_tunes_theme_url( $key, $value, $field ) {
+	$v0=bw_array_get( $value, 0, $value );
+	if ( $v0 ) {
+		//oik_require( "shortcodes/oik-link.php" );
+		$link=retlink( $field['#title'], $v0, $field['#title'], "View in {$field['#title']}", 'target="_blank"' );
+		e( $link );
+	}
+}
+
+
