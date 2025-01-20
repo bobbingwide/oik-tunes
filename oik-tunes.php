@@ -387,7 +387,7 @@ function bw_theme_field_noderef__oikt_original( $key, $value, $field ) {
 		if ( $id === (int) $original ) {
 			sepan( 'original', 'This is the original');
 		} else {
-			bw_theme_field_noderef( $key, [ $original ], $field );
+			//bw_theme_field_noderef( $key, [ $original ], $field );
 		}
 	}
 }
