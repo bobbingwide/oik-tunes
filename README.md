@@ -3,9 +3,9 @@
 * Contributors: bobbingwide
 * Donate link: https://www.oik-plugins.com/oik/oik-donate/
 * Tags: getID3, recordings, tracks, import
-* Requires at least: 5.0
-* Tested up to: 6.4.1
-* Stable tag: 1.0.0
+* Requires at least: 6.7
+* Tested up to: 6.7.1
+* Stable tag: 2.0.0
 * License: GPLv2 or later
 * License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -71,6 +71,9 @@ See https://github.com/jamesheinrich/getid3
 1. oik-tunes in action
 
 ## Upgrade Notice 
+# 2.0.0 
+Major update for officialcaravan.co.uk
+
 # 1.0.0 
 Update for support for PHP 8.1 and PHP 8.2
 
@@ -90,6 +93,30 @@ Dependent upon oik v2.0-alpha and oik fields v1.18.0302
 This plugin is dependent upon oik v1.18 and oik fields v1.18
 
 ## Changelog 
+# 2.0.0 
+* Changed: _oikt_original virtual field - only show when it's the original.
+* Changed: Other versions: highlight original recording #12
+* Changed: Support Original version update when slug has changed #11
+* Changed: Add Wikipedia and Cocacamp links to oik-recording #13
+* Changed: Add admin interface to automatically set the Original noderef _oikt_original #11
+* Changed: _oikt_original: Display Not set when original track isn't selected #12
+* Changed: Refactor oik_tunes_theme_other_versions to include track duration and individiual links #12
+* Added: Add _oikt_original noderef to oik-track #11
+* Changed: Recording to breadcrumb links #12
+* Changed: Update post meta fields #9.
+* Changed: Add filter for top-level recordings on the Discography page #10
+* Changed: Change oik_tunes_query_recording to find the recording for the selected parent #7
+* Changed: Set menu_order for recordings not tracks #7
+* Added: Attempt to play the track if TUNES_FOLDER and DVINYL_SYMLINK defined #9
+* Changed: Cater for collections #7
+* Changed: Hardcoded solution for Composer's aliases #8
+* Added: Add logic to play a locally served browser accessible track #9
+* Changed: Cater for the box set #7
+* Changed: Update oik-tunes admin to cater for a box set #7
+* Changed: Support WordPress 6.7.1, the sb-field-block and advanced-query-loop #5
+* Tested: With WordPress 6.7.1 and WordPress Multisite
+* Tested: With PHP 8.3
+
 # 1.0.0 
 * Changed: Add PHPUnit tests for PHP 8.1 and PHP 8.2 #4
 * Tested: With WordPress 6.4.1 and WordPress Multisite
