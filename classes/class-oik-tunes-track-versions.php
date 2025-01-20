@@ -216,6 +216,8 @@ class Oik_Tunes_Track_versions {
 		$current_value = get_post_meta( $ID, '_oikt_original', true );
 		if ( !$current_value ) {
 			add_post_meta( $ID, '_oikt_original', $original );
+		} elseif ( $current_value !== $original) {
+			update_post_meta( $ID, '_oikt_original',$original, $current_value );
 		}
 	}
 }
