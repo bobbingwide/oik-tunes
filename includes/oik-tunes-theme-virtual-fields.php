@@ -21,7 +21,7 @@ function oik_tunes_theme_other_versions( $_oikt_original, $id  ) {
 	, "numberposts" => "-1"
 	, "meta_key" => "_oikt_original"
 	, "meta_value" => $_oikt_original
-	//, "exclude" => -1
+	, "exclude" => -1
 	, "orderby" => "date"
 	, "order" => "ASC"
 	];
@@ -32,7 +32,12 @@ function oik_tunes_theme_other_versions( $_oikt_original, $id  ) {
 	foreach ( $posts as $post ) {
 		$version = oik_tunes_get_version_info( $post);
 		//$linkt = retlink( "oik-track", get_permalink( $post->ID), $linktext );
-		li( $version );
+		if ( $post->ID == $_oikt_original ) {
+			lit( "$version (original)", 'original' );
+		} else {
+			li( $version );
+		}
+
 	}
 	eol();
 }
