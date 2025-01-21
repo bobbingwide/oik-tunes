@@ -287,9 +287,10 @@ function oik_tunes_aql_query_vars( $query_args, $block_query, $inherited ) {
 			if ( $index === 'relation' ) {
 				continue;
 			}
-			if ( '_oikt_recording' === $meta_query['key'] && '.' === $meta_query['value'] ) {
-				$query_args['meta_query'][ $index ]['value']= $id;
-
+			if ( '_oikt_recording' === $meta_query['key'] &&
+			    isset( $meta_query['value'] ) &&
+				str_contains( $meta_query['value'], '.' ) ) {
+					$query_args['meta_query'][ $index ]['value']= $id;
 			}
 		}
 	}
