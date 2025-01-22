@@ -3,7 +3,7 @@
 Plugin Name: oik tunes
 Plugin URI: https://www.oik-plugins.com/oik-plugins/oik-tunes
 Description: Record catalogue - recordings and tracks 
-Version: 2.0.0
+Version: 2.0.1
 Author: bobbingwide
 Author URI: https://bobbingwide.com/about-bobbing-wide
 License: GPL3

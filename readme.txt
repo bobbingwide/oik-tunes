@@ -4,7 +4,7 @@ Donate link: https://www.oik-plugins.com/oik/oik-donate/
 Tags: getID3, recordings, tracks, import
 Requires at least: 6.7
 Tested up to: 6.7.1
-Stable tag: 2.0.0
+Stable tag: 2.0.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -70,6 +70,9 @@ See [github JamesHeinrich getID3]
 1. oik-tunes in action
 
 == Upgrade Notice ==
+= 2.0.1 =
+Update for recording post date in the list of other track versions.
+
 = 2.0.0 =
 Major update for officialcaravan.co.uk 
 
@@ -92,6 +95,10 @@ Dependent upon oik v2.0-alpha and oik fields v1.18.0302
 This plugin is dependent upon oik v1.18 and oik fields v1.18
 
 == Changelog ==
+= 2.0.1 = 
+* Changed: Other versions: Add recording post date #15
+* Changed: Support site editor and front-end #14
+
 = 2.0.0 =
 * Changed: _oikt_original virtual field - only show when it's the original.
 * Changed: Other versions: highlight original recording #12
