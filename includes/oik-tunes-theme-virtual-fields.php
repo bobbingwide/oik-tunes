@@ -58,6 +58,15 @@ function oik_tunes_get_version_info( $post ) {
 		}
 
 		$version .= retlink( "oik-recording", get_permalink( $recording->ID), $recording->post_title );
+		$version .= ' ';
+		$version .= oik_tunes_format_post_date( $recording->post_date );
 	}
 	return $version;
+}
+
+function oik_tunes_format_post_date( $date ) {
+	$format = get_option( 'date_format' );
+	$date = strtotime( $date );
+	$formatted = date_i18n( $format, $date );
+	return $formatted;
 }
